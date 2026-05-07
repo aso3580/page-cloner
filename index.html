@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Page Cloner</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Space+Mono&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0f;--surface:#111118;--border:#222230;--accent:#00e5ff;--accent2:#ff3cac;--text:#e8e8f0;--muted:#666688;--success:#00ff9d;--error:#ff4545}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Space Mono',monospace;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(0,229,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,.03) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+.wrap{position:relative;z-index:1;max-width:780px;margin:0 auto;padding:60px 24px 80px}
+header{text-align:center;margin-bottom:52px}
+.logo{display:inline-flex;align-items:center;justify-content:center;width:52px;height:52px;border:2px solid var(--accent);border-radius:12px;margin-bottom:16px;animation:glow 3s ease-in-out infinite}
+@keyframes glow{0%,100%{box-shadow:0 0 12px rgba(0,229,255,.3)}50%{box-shadow:0 0 32px rgba(0,229,255,.6)}}
+h1{font-family:'Syne',sans-serif;font-size:clamp(2rem,5vw,3rem);font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sub{margin-top:10px;color:var(--muted);font-size:.75rem;letter-spacing:.1em;text-transform:uppercase}
+.tags{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:16px}
+.tag{background:rgba(0,229,255,.06);border:1px solid rgba(0,229,255,.2);color:var(--accent);padding:4px 12px;border-radius:100px;font-size:.68rem;letter-spacing:.08em}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:40px;position:relative;overflow:hidden}
+.card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--accent),var(--accent2),transparent)}
+.row{display:flex;gap:12px;margin-bottom:24px}
+.inp-wrap{flex:1;position:relative}
+.ico{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:.9rem;pointer-events:none}
+input[type=text]{width:100%;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:10px;color:var(--text);font-family:'Space Mono',monospace;font-size:.85rem;padding:14px 16px 14px 40px;outline:none;transition:border-color .2s,box-shadow .2s}
+input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,229,255,.1)}
+input::placeholder{color:var(--muted)}
+.btn{background:linear-gradient(135deg,var(--accent),#0099bb);color:#000;font-family:'Syne',sans-serif;font-weight:700;font-size:.9rem;border:none;border-radius:10px;padding:14px 28px;cursor:pointer;white-space:nowrap;transition:transform .15s,box-shadow .2s,opacity .2s;display:flex;align-items:center;gap:8px;box-shadow:0 4px 20px rgba(0,229,255,.3)}
+.btn:hover{transform:translateY(-1px);box-shadow:0 6px 28px rgba(0,229,255,.45)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.prog{display:none;margin-bottom:20px}
+.prog.on{display:block}
+.prog-bar-bg{height:4px;background:var(--border);border-radius:100px;overflow:hidden;margin-bottom:10px}
+.prog-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:100px;width:0%;transition:width .5s ease}
+.st{font-size:.76rem;color:var(--accent);letter-spacing:.05em}
+.result{display:none;padding:24px;background:rgba(0,255,157,.04);border:1px solid rgba(0,255,157,.2);border-radius:12px;text-align:center;animation:up .4s ease}
+.result.on{display:block}
+@keyframes up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.r-icon{font-size:2.5rem;margin-bottom:10px}
+.r-title{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;color:var(--success);margin-bottom:6px}
+.r-sub{font-size:.74rem;color:var(--muted);margin-bottom:18px}
+.btn-dl{background:linear-gradient(135deg,var(--success),#00cc7a);color:#000;font-family:'Syne',sans-serif;font-weight:700;font-size:.9rem;border:none;border-radius:10px;padding:12px 28px;cursor:pointer;box-shadow:0 4px 20px rgba(0,255,157,.3);transition:transform .15s;display:inline-flex;align-items:center;gap:8px}
+.btn-dl:hover{transform:translateY(-1px)}
+.err{display:none;padding:14px 18px;background:rgba(255,69,69,.06);border:1px solid rgba(255,69,69,.25);border-radius:10px;color:var(--error);font-size:.8rem}
+.err.on{display:block}
+.spinner{display:inline-block;width:15px;height:15px;border:2px solid rgba(0,0,0,.25);border-top-color:#000;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-top:36px}
+.ic{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px}
+.ic .em{font-size:1.4rem;margin-bottom:10px}
+.ic h3{font-family:'Syne',sans-serif;font-size:.82rem;font-weight:700;color:var(--accent);margin-bottom:6px}
+.ic p{font-size:.72rem;color:var(--muted);line-height:1.6}
+@media(max-width:600px){.row{flex-direction:column}.card{padding:24px 18px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#00e5ff" stroke-width="2">
+        <path d="M10 20H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v4"/>
+        <path d="M16 19l2 2 4-4"/><path d="M8 10h8M8 14h4"/>
+      </svg>
+    </div>
+    <h1>Page Cloner</h1>
+    <p class="sub">完整頁面擷取工具 · 一鍵打包 HTML</p>
+    <div class="tags">
+      <span class="tag">✓ 內嵌所有 CSS</span>
+      <span class="tag">✓ 內嵌所有 JS</span>
+      <span class="tag">✓ SCSS hash 自動偵測</span>
+      <span class="tag">✓ 圖片轉 Base64</span>
+      <span class="tag">✓ 相對路徑 → 絕對路徑</span>
+    </div>
+  </header>
+
+  <div class="card">
+    <div class="row">
+      <div class="inp-wrap">
+        <span class="ico">🌐</span>
+        <input type="text" id="url" placeholder="https://example.com" spellcheck="false" autocomplete="off"/>
+      </div>
+      <button class="btn" id="btn" onclick="go()">
+        <span id="bt">開始擷取</span>
+        <span id="sp" style="display:none"><div class="spinner"></div></span>
+      </button>
+    </div>
+    <div class="prog" id="prog">
+      <div class="st" id="st">準備中...</div>
+      <div class="prog-bar-bg"><div class="prog-bar" id="pb"></div></div>
+    </div>
+    <div class="err" id="err"></div>
+    <div class="result" id="res"></div>
+  </div>
+
+  <div class="cards">
+    <div class="ic"><div class="em">🔗</div><h3>SCSS 動態 Hash</h3><p>直接解析 HTML 的 &lt;link&gt; 標籤，每次自動抓最新編譯路徑。</p></div>
+    <div class="ic"><div class="em">📦</div><h3>單一 HTML</h3><p>CSS、JS、字型、圖片全部內嵌，離線也能正常開啟。</p></div>
+    <div class="ic"><div class="em">🛤️</div><h3>路徑自動轉換</h3><p>所有相對路徑自動轉絕對路徑，資源零遺失。</p></div>
+  </div>
+</div>
+
+<script>
+let blob=null,filename="cloned.html";
+document.getElementById("url").addEventListener("keydown",e=>{if(e.key==="Enter")go()});
+function setP(p,t){document.getElementById("pb").style.width=p+"%";document.getElementById("st").textContent=t}
+async function go(){
+  const url=document.getElementById("url").value.trim();
+  if(!url){document.getElementById("url").focus();return}
+  document.getElementById("err").className="err";
+  document.getElementById("res").className="result";
+  blob=null;
+  document.getElementById("prog").className="prog on";
+  document.getElementById("btn").disabled=true;
+  document.getElementById("bt").textContent="擷取中...";
+  document.getElementById("sp").style.display="inline";
+  setP(10,"連線中，取得頁面原始碼...");
+  const steps=[[25,"解析 HTML 結構..."],[45,"下載 CSS / SCSS 樣式..."],[62,"下載 JavaScript 檔案..."],[78,"處理圖片與字型..."],[90,"組合最終 HTML..."]];
+  let i=0;
+  const t=setInterval(()=>{if(i<steps.length)setP(...steps[i++])},1800);
+  try{
+    const resp=await fetch("/api/clone",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url})});
+    clearInterval(t);
+    if(!resp.ok){const e=await resp.json();throw new Error(e.error||"未知錯誤")}
+    const cd=resp.headers.get("Content-Disposition")||"";
+    const m=cd.match(/filename="?([^";\n]+)"?/);
+    if(m)filename=m[1];
+    blob=await resp.blob();
+    setP(100,"擷取完成！");
+    const size=blob.size>1048576?(blob.size/1048576).toFixed(2)+" MB":(blob.size/1024).toFixed(1)+" KB";
+    document.getElementById("res").innerHTML=`<div class="r-icon">🎉</div><div class="r-title">擷取成功！</div><div class="r-sub">檔案大小：${size} · ${filename}</div><button class="btn-dl" onclick="dl()">⬇ 下載 HTML 檔案</button>`;
+    document.getElementById("res").className="result on";
+  }catch(e){
+    clearInterval(t);setP(0,"發生錯誤");
+    document.getElementById("err").textContent="❌ "+e.message;
+    document.getElementById("err").className="err on";
+  }finally{
+    document.getElementById("btn").disabled=false;
+    document.getElementById("bt").textContent="開始擷取";
+    document.getElementById("sp").style.display="none";
+  }
+}
+function dl(){if(!blob)return;const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),3000)}
+</script>
+</body>
+</html>
